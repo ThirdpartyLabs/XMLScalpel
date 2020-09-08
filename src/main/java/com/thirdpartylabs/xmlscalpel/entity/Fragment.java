@@ -17,7 +17,8 @@ package com.thirdpartylabs.xmlscalpel.entity;
 import org.w3c.dom.DocumentFragment;
 
 /**
- * Wrapper for a DocumentFragment and corresponding XMLByteLocation
+ * Wrapper for a {@link org.w3c.dom.DocumentFragment DocumentFragment} and corresponding
+ * {@link com.thirdpartylabs.xmlscalpel.entity.XMLByteLocation XMLByteLocation}
  */
 public class Fragment
 {
@@ -25,8 +26,9 @@ public class Fragment
     private final XMLByteLocation xmlByteLocation;
 
     /**
-     * @param documentFragment A fragment extracted from an XML file
-     * @param location Object representing the byte coordinates of the fragment
+     * @param documentFragment A {@link org.w3c.dom.DocumentFragment DocumentFragment} extracted from an XML file
+     * @param location {@link com.thirdpartylabs.xmlscalpel.entity.XMLByteLocation XMLByteLocation} Object representing
+     * the byte coordinates of the fragment
      */
     public Fragment(DocumentFragment documentFragment, XMLByteLocation location)
     {
@@ -34,11 +36,19 @@ public class Fragment
         this.xmlByteLocation = location;
     }
 
+    /**
+     * @return {@link org.w3c.dom.DocumentFragment DocumentFragment} extracted from an XML file
+     */
     public DocumentFragment getDocumentFragment()
     {
         return documentFragment;
     }
 
+    /**
+     *
+     * @return {@link com.thirdpartylabs.xmlscalpel.entity.XMLByteLocation XMLByteLocation} Object representing
+     * the byte coordinates of the fragment
+     */
     public XMLByteLocation getXmlByteLocation()
     {
         return xmlByteLocation;

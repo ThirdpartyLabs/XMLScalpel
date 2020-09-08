@@ -21,15 +21,16 @@ import java.io.Reader;
 import java.util.LinkedList;
 
 /**
- * FilterReader that tracks byte progress as chars are read.
+ * {@link java.io.FilterReader FilterReader} that tracks byte progress as chars are read.
+ * <p>
  * Char offsets are mapped to byte offsets, so that known char offsets can be used to
  * determine byte offsets. Only a certain number (set in charMemoryDepth, currently 8192)
  * of the most recent offsets are remembered. This reader is specifically intended to be used
- * in conjunction with the Woodstox streaming reader, which seems to read 2048 chars ahead of the
- * reported progress, so we need to account for that, and accommodate potentially large tag names,
- * since the end tag plus the read-ahead determine the length of memory we need.
+ * in conjunction with the {@link com.ctc.wstx.stax.WstxInputFactory Woodstox} streaming reader,
+ * which seems to read 2048 chars ahead of the reported progress, so we need to account for that, and accommodate
+ * potentially large tag names, since the end tag plus the read-ahead determine the length of memory we need.
  */
-class ByteTrackingReader extends FilterReader
+public class ByteTrackingReader extends FilterReader
 {
     private static final int CHAR_ONE_BYTE_MASK = 0xFFFFFF80;
     private static final int CHAR_TWO_BYTES_MASK = 0xFFFFF800;
@@ -59,7 +60,7 @@ class ByteTrackingReader extends FilterReader
     /**
      * Creates a new byte tracking filtered reader.
      *
-     * @param in a Reader object providing the underlying stream.
+     * @param in a {@link java.io.Reader Reader} object providing the underlying stream.
      * @throws NullPointerException if {@code in} is {@code null}
      */
     protected ByteTrackingReader(Reader in)
@@ -72,6 +73,7 @@ class ByteTrackingReader extends FilterReader
      *
      * @param n Number of chars to skip
      * @return Number of chars actually skipped
+     * @throws java.io.IOException
      */
     @Override
     public long skip(long n) throws IOException
@@ -105,9 +107,10 @@ class ByteTrackingReader extends FilterReader
      * Read and count the bytes in the chars that are read
      *
      * @param buffer Char array to be filled
-     * @param off The buffer will be filled statring at this offset
+     * @param off The buffer will be filled starting at this offset
      * @param len The number of chars to read
      * @return the number of chars read
+     * @throws java.io.IOException
      */
     @Override
     public int read(char[] buffer, int off, int len) throws IOException
@@ -126,6 +129,7 @@ class ByteTrackingReader extends FilterReader
      * Read a char and count the bytes
      *
      * @return A single char read from the file
+     * @throws java.io.IOException
      */
     @Override
     public int read() throws IOException

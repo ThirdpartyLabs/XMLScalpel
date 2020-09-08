@@ -24,10 +24,12 @@ import org.w3c.dom.Document;
 import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 
+import javax.management.modelmbean.XMLParseException;
 import javax.xml.XMLConstants;
 import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
@@ -43,8 +45,10 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Streaming XML file reader that uses the Woodstox stream reader to extract top level XML nodes along with metadata
- * describing their location in the XML file, and send them to an XMLStreamProcessor.
+ * Streaming XML file reader that uses the {@link com.ctc.wstx.stax.WstxInputFactory Woodstox} stream reader to extract
+ * top level XML nodes along with metadata describing their location in the XML file, and send them to an
+ * {@link com.thirdpartylabs.xmlscalpel.processor.XMLStreamProcessor XMLStreamProcessor}.
+ * <p>
  * Using the streaming reader allows large files to be processed without significant overhead.
  */
 public class StreamingXMLReader
@@ -71,8 +75,13 @@ public class StreamingXMLReader
     }
 
     /**
-     * Read an XML file using the Woodstox streaming API and supply the XMLStreamProcessor with Fragment objects.
-     * Specify a list of node paths to extract. Example:
+     * Read an XML file using the {@link com.ctc.wstx.stax.WstxInputFactory Woodstox} streaming API and supply the
+     * {@link com.thirdpartylabs.xmlscalpel.processor.XMLStreamProcessor XMLStreamProcessor} with
+     * {@link com.thirdpartylabs.xmlscalpel.entity.Fragment Fragment} objects.
+     * Specify a {@link java.util.List List} of node paths to extract. Example:
+     * <pre>
+     * {@code
+     * <xml>
      * <Feed>
      *     <Category>
      *         <Name>Bolts</Name>
@@ -92,25 +101,35 @@ public class StreamingXMLReader
      *         </Services>
      *     </Category>
      * </Feed>
-     *
-     * You can extract all product and service elements in the same read operation by passing in these paths:
-     * /feed/category/Product
-     * /feed/category/Services/Service
-     *
-     * Namespace prefixes may be specified as they appear in the XML: /aw:PurchaseOrders/aw:PurchaseOrder/aw:Address
-     *
+     * }
+     * </pre>
+     * <p>
+     * You can extract all {@code product} and {@code service} elements in the same read operation by
+     * passing in these paths:<br>
+     * {@code /feed/category/Product}<br>
+     * {@code /feed/category/Services/Service}
+     * <p>
+     * Namespace prefixes may be specified as they appear in the XML:
+     * {@code /aw:PurchaseOrders/aw:PurchaseOrder/aw:Address}
+     * <p>
      * Paths are absolute with respect to the document root, they will be normalized to always have a leading slash
      * and never have a trailing slash. Overlapping paths are not supported, the least specific path will be used in
      * such a case.
-     *
-     * Fragment objects wrap the dom node as a DocumentFragment and an XMLByteLocation object that describes the
+     * <p>
+     * {@link com.thirdpartylabs.xmlscalpel.entity.Fragment Fragment} objects wrap the dom node as a
+     * {@link org.w3c.dom.DocumentFragment DocumentFragment} and an
+     * {@link com.thirdpartylabs.xmlscalpel.entity.XMLByteLocation XMLByteLocation} object that describes the
      * node's location in the XML file. This allows efficient retrieval of the nodes later using the
-     * RandomAccessXMLReader
+     * {@link com.thirdpartylabs.xmlscalpel.io.reader.RandomAccessXMLReader RandomAccessXMLReader}
      * <p>
      *
-     * @param file      The XML file to process
-     * @param processor XMLStreamProcessor instance
-     * @param targetPaths List of node paths to target for extraction
+     * @param file        The XML file to process
+     * @param processor   {@link com.thirdpartylabs.xmlscalpel.processor.XMLStreamProcessor XMLStreamProcessor} instance
+     * @param targetPaths {@link java.util.List List} of node paths to target for extraction
+     *
+     * @throws FileNotFoundException
+     * @throws XMLStreamException
+     * @throws TransformerException
      */
     public void readFile(File file, XMLStreamProcessor processor, List<String> targetPaths) throws FileNotFoundException, XMLStreamException, TransformerException
     {
@@ -190,7 +209,7 @@ public class StreamingXMLReader
                 popTag();
 
                 // If we are not rolling into a sibling, we need to do some housekeeping
-                if(eventType != XMLStreamConstants.START_ELEMENT)
+                if (eventType != XMLStreamConstants.START_ELEMENT)
                 {
                     advanceToNextStartElement();
                 }
@@ -202,6 +221,10 @@ public class StreamingXMLReader
         }
     }
 
+    /**
+     * Skip to the next readable element, keeping state as needed
+     * @throws XMLStreamException
+     */
     private void advanceToNextStartElement() throws XMLStreamException
     {
         // If we're at the end of the current set of target nodes, pop the outer element off of the stack
@@ -221,29 +244,41 @@ public class StreamingXMLReader
                 popTag();
             }
             // Keep rolling until we either hit another start element or the end of the document
-        } while(eventType != XMLStreamConstants.START_ELEMENT
-                && eventType != XMLStreamConstants.END_DOCUMENT);
+        } while (eventType != XMLStreamConstants.START_ELEMENT
+                 && eventType != XMLStreamConstants.END_DOCUMENT);
     }
 
     /**
-     * Read an XML file using the Woodstox streaming API and supply the XMLStreamProcessor with Fragment objects.
+     * Read an XML file using the {@link com.ctc.wstx.stax.WstxInputFactory Woodstox} streaming API and supply the
+     * {@link com.thirdpartylabs.xmlscalpel.processor.XMLStreamProcessor XMLStreamProcessor} with
+     * {@link com.thirdpartylabs.xmlscalpel.entity.Fragment Fragment} objects.
      * <p>
      * All (and only) top level elements are returned. For example, given an XML file with a structure like
+     * <pre>
+     * {@code
      * <feed>
-     * <product></product>
-     * <product></product>
-     * <product></product>
+     *  <product></product>
+     *  <product></product>
+     *  <product></product>
      * </feed>
+     * }
+     * </pre>
      * <p>
-     * All product nodes will be returned.
+     * All {@code product} nodes will be returned.
      * <p>
-     * Fragment objects wrap the dom node as a DocumentFragment and an XMLByteLocation object that describes the
+     * {@link com.thirdpartylabs.xmlscalpel.entity.Fragment Fragment} objects wrap the dom node as a
+     * {@link org.w3c.dom.DocumentFragment DocumentFragment} and an
+     * {@link com.thirdpartylabs.xmlscalpel.entity.XMLByteLocation XMLByteLocation} object that describes the
      * node's location in the XML file. This allows efficient retrieval of the nodes later using the
-     * RandomAccessXMLReader
+     * {@link com.thirdpartylabs.xmlscalpel.io.reader.RandomAccessXMLReader RandomAccessXMLReader}
      * <p>
      *
      * @param file      The XML file to process
-     * @param processor XMLStreamProcessor instance
+     * @param processor {@link com.thirdpartylabs.xmlscalpel.processor.XMLStreamProcessor XMLStreamProcessor} instance
+     *
+     * @throws FileNotFoundException
+     * @throws XMLStreamException
+     * @throws TransformerException
      */
     public void readFile(File file, XMLStreamProcessor processor) throws FileNotFoundException, XMLStreamException, TransformerException
     {
@@ -253,7 +288,7 @@ public class StreamingXMLReader
     /**
      * A map containing the attribute name-value pairs from the document element
      *
-     * @return Map<String, String>
+     * @return {@link java.util.Map Map}&lt;{@link java.lang.String}, {@link java.lang.String}&gt;
      */
     public Map<String, String> getDocumentElementAttributes()
     {
@@ -263,7 +298,7 @@ public class StreamingXMLReader
     /**
      * A map containing the namespace prefix to URI pairs from the document element
      *
-     * @return Map<String, String>
+     * @return {@link java.util.Map Map}&lt;{@link java.lang.String}, {@link java.lang.String}&gt;
      */
     public Map<String, String> getDocumentElementAttributeNamespaces()
     {
@@ -338,7 +373,7 @@ public class StreamingXMLReader
      * Returns null if none was declared
      *
      * @return the XML version or null
-     * @see javax.xml.stream.XMLStreamReader::getVersion()
+     * @see javax.xml.stream.XMLStreamReader
      */
     public String getVersion()
     {
@@ -352,7 +387,10 @@ public class StreamingXMLReader
 
     /**
      * Open an XML file, extract relevant metadata, sn prepare for reading
+     *
      * @param file The XML file to initialize
+     * @throws FileNotFoundException
+     * @throws XMLStreamException
      */
     private void initializeDocument(File file) throws FileNotFoundException, XMLStreamException
     {
@@ -419,9 +457,13 @@ public class StreamingXMLReader
 
     /**
      * @param file XML file to extract an empty document for
-     * @return Document containing only the document element from the file provided
+     * @return {@link org.w3c.dom.Document Document} containing only the document element from the file provided
+     * @throws FileNotFoundException
+     * @throws XMLStreamException
+     * @throws ParserConfigurationException
+     * @throws XMLParseException
      */
-    public Document getEmptyDocument(File file) throws Exception
+    public Document getEmptyDocument(File file) throws FileNotFoundException, XMLStreamException, ParserConfigurationException, XMLParseException
     {
         initializeDocument(file);
 
@@ -429,10 +471,12 @@ public class StreamingXMLReader
     }
 
     /**
-     * @return Document containing only the document element from the last file provided to this instance of
+     * @return {@link org.w3c.dom.Document Document} containing only the document element from the last file provided to this instance of
      * StreamingXMLReader
+     * @throws ParserConfigurationException
+     * @throws XMLParseException
      */
-    public Document getEmptyDocument() throws Exception
+    public Document getEmptyDocument() throws ParserConfigurationException, XMLParseException
     {
         if (documentElementTagName == null)
         {
@@ -459,7 +503,7 @@ public class StreamingXMLReader
 
             if (nsURI == null)
             {
-                throw new Exception("Document element prefix not found in namespace attributes");
+                throw new XMLParseException("Document element prefix not found in namespace attributes");
             }
 
             documentElement = output.createElementNS(nsURI, documentElementPrefix + ":" + documentElementTagName);
@@ -487,8 +531,11 @@ public class StreamingXMLReader
     }
 
     /**
-     * @return OuterDocument wrapper containing the empty Document containing only the document element from the
+     * @param file XML file to parse into an {@link com.thirdpartylabs.xmlscalpel.entity.OuterDocument OuterDocument}
+     * @return  {@link com.thirdpartylabs.xmlscalpel.entity.OuterDocument OuterDocument} wrapper containing the
+     * empty {@link org.w3c.dom.Document Document} containing only the document element from the
      * file provided
+     * @throws Exception
      */
     public OuterDocument getOuterDocument(File file) throws Exception
     {
@@ -499,8 +546,10 @@ public class StreamingXMLReader
     }
 
     /**
-     * @return OuterDocument wrapper containing the empty Document containing only the document element from the
-     * last file provided to this instance of StreamingXMLReader
+     * @return  {@link com.thirdpartylabs.xmlscalpel.entity.OuterDocument OuterDocument} wrapper containing the empty
+     * {@link org.w3c.dom.Document Document} containing only the document element from the last file provided to this
+     * instance of {@link com.thirdpartylabs.xmlscalpel.io.reader.StreamingXMLReader StreamingXMLReader}
+     * @throws Exception
      */
     public OuterDocument getOuterDocument() throws Exception
     {
@@ -508,9 +557,13 @@ public class StreamingXMLReader
         return new OuterDocument(emptyDocument, characterEncodingScheme);
     }
 
+    /**
+     * Normalize and set the paths
+     * @param targetPathInput The list of path Strings
+     */
     private void setTargetPaths(List<String> targetPathInput)
     {
-        if(targetPathInput==null)
+        if (targetPathInput == null)
         {
             targetPaths.clear();
             return;
@@ -536,14 +589,19 @@ public class StreamingXMLReader
 
     private boolean elementIsEligibleForProcessing()
     {
+        // If there are no path specs, always handle the opening element events
         if (targetPaths.isEmpty())
         {
             return true;
         }
 
+        // Only handle the event if the current path matches a user path
         return targetPaths.contains(currentPath);
     }
 
+    /**
+     * Get the current path based upon the tag stack
+     */
     private String getCurrentTagPath()
     {
         String path = String.join("/", tagStack);
@@ -551,6 +609,11 @@ public class StreamingXMLReader
         return normalizeTargetPath(path);
     }
 
+    /**
+     * Create a prefix:localName representation of the provided {@link javax.xml.namespace.QName QName}
+     * @param qName {@link javax.xml.namespace.QName QName} to normalize
+     * @return prefix:localName
+     */
     private String normalizeQname(QName qName)
     {
         String prefix = qName.getPrefix();
@@ -564,6 +627,11 @@ public class StreamingXMLReader
         return tagName;
     }
 
+    /**
+     * Always ensure paths are formatted as we expect them to be
+     * @param path Path to normalize
+     * @return Normalized path
+     */
     private String normalizeTargetPath(String path)
     {
         return path.replaceAll("^/?(.*[^/$])/?", "\\/$1");

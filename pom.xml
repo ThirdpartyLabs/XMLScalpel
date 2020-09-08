@@ -3,10 +3,42 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.thirdpartylabs.xmlscalpel</groupId>
+    <groupId>com.thirdpartylabs</groupId>
     <artifactId>xmlscalpel-core</artifactId>
     <version>0.0.1</version>
     <packaging>jar</packaging>
+    <name>${project.groupId}:${project.artifactId}</name>
+    <description>XMLScalpel is a Java library that enables the efficient extraction of document fragments from XML files by byte offset.</description>
+    <developers>
+        <developer>
+            <id>rruchte</id>
+            <name>Rob Ruchte</name>
+            <email>rob@thirdpartylabs.com</email>
+            <organization>Thirdparty Labs</organization>
+            <organizationUrl>https://thirdpartylabs.com</organizationUrl>
+        </developer>
+    </developers>
+    <organization>
+        <name>Thirdparty Labs</name>
+        <url>https://thirdpartylabs.com</url>
+    </organization>
+    <url>https://github.com/rruchte/XMLScalpel</url>
+    <issueManagement>
+        <url>https://github.com/rruchte/XMLScalpel/issues</url>
+    </issueManagement>
+    <scm>
+        <connection>scm:git:git@github.com:rruchte/XMLScalpel.git</connection>
+        <developerConnection>scm:git:git@github.com:rruchte/XMLScalpel.git</developerConnection>
+        <url>https://github.com/rruchte/XMLScalpel</url>
+        <tag>HEAD</tag>
+    </scm>
+    <licenses>
+        <license>
+            <name>The Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <woodstox-version>6.0.3</woodstox-version>
@@ -44,4 +76,18 @@
             </plugin>
         </plugins>
     </build>
+    <reporting>
+        <plugins>
+            <plugin>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <show>private</show>
+                    <serialwarn>true</serialwarn>
+                    <author>true</author>
+                    <doctitle>${project.name} ${project.version} API</doctitle>
+                    <windowtitle>${project.name} ${project.version} API</windowtitle>
+                </configuration>
+            </plugin>
+        </plugins>
+    </reporting>
 </project>

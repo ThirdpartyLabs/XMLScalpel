@@ -31,11 +31,13 @@ import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Wrapper for the empty document read by the StreamingXMLReader
- * Provides the ability to generate new DocumentFragments from XML strings from the document
- * that have namespaces bound appropriately. It is only necessary to pass the retrieved XML strings through this
- * process if the XML uses namespaces with prefixes, or if you want to generate XML documents that wrap the retrieved
- * nodes in the original document element
+ * Wrapper for the empty document read by the
+ * {@link  com.thirdpartylabs.xmlscalpel.io.reader.StreamingXMLReader StreamingXMLReader}
+ * <p>
+ * Provides the ability to generate new {@link org.w3c.dom.DocumentFragment DocumentFragments} from XML strings from
+ * the document that have namespaces bound appropriately. It is only necessary to pass the retrieved XML
+ * strings through this process if the XML uses namespaces with prefixes, or if you want to generate XML documents
+ * that wrap the retrieved nodes in the original document element.
  */
 public class OuterDocument
 {
@@ -44,7 +46,7 @@ public class OuterDocument
     private String emptyDocumentString;
 
     /**
-     * @param emptyDocument Document containing an a document node
+     * @param emptyDocument {@link org.w3c.dom.Document Document} containing an a document node
      */
     public OuterDocument(Document emptyDocument)
     {
@@ -53,7 +55,7 @@ public class OuterDocument
 
     /**
      *
-     * @param emptyDocument Document containing an a document node
+     * @param emptyDocument {@link org.w3c.dom.Document Document} containing an a document node
      * @param characterEncoding Specify character encoding og the file
      */
     public OuterDocument(Document emptyDocument, String characterEncoding)
@@ -63,7 +65,8 @@ public class OuterDocument
     }
 
     /**
-     * @return Document
+     * The XML {@link org.w3c.dom.Document Document} containing only the document element
+     * @return {@link org.w3c.dom.Document Document}
      */
     public Document getBareDocument()
     {
@@ -71,8 +74,7 @@ public class OuterDocument
     }
 
     /**
-     *
-     * @param emptyDocument Document containing an a document node
+     * @param emptyDocument {@link org.w3c.dom.Document Document} containing only a document element
      */
     public void setBareDocument(Document emptyDocument)
     {
@@ -81,13 +83,20 @@ public class OuterDocument
     }
 
     /**
-     * Returns document fragment from the provided XML that is bound with the namespaces from the original
-     * outer document. Intended to be used for rehydrating nodes retrieved by byte offset from the original XML file.
-     *
+     * Returns a {@link org.w3c.dom.DocumentFragment DocumentFragment} from the provided XML that is bound with the
+     * namespaces from the original outer document. Intended to be used for rehydrating nodes retrieved by byte offset
+     * from the original XML file.
+     *<p>
      * This process is only necessary when retrieving nodes that contain namespace prefixes
      *
-     * @param xml XML String to hydrate
-     * @return DocumentFragment representatino of the XML. Namespaces are bound, if applicable
+     * @param xml XML {@link java.lang.String String} to hydrate
+     * @return {@link org.w3c.dom.DocumentFragment DocumentFragment} representation of the XML.
+     * Namespaces are bound, if applicable
+     *
+     * @throws ParserConfigurationException
+     * @throws TransformerException
+     * @throws IOException
+     * @throws SAXException
      */
     public DocumentFragment getDocumentFragmentForXmlString(String xml) throws ParserConfigurationException,
             TransformerException, IOException, SAXException

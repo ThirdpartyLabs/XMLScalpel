@@ -24,16 +24,19 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Fast retrieval of strings from a file by byte offset and length as defined by an XMLByteLocation object
+ * Fast retrieval of strings from a file by byte offset and length as defined by an
+ * {@link com.thirdpartylabs.xmlscalpel.entity.XMLByteLocation XMLByteLocation} object
  */
 public class RandomAccessXMLReader
 {
     /**
-     * Get a string from the provided file using the offset and length from the XMLByteLocation, encoded with the
+     * Get a {@link java.lang.String String} from the provided {@link java.io.File File} using the offset and
+     * length from the {@link com.thirdpartylabs.xmlscalpel.entity.XMLByteLocation XMLByteLocation}, encoded with the
      * provided charset
-     * @param file The file to extract data from
+     * @param file The {@link java.io.File File} to extract data from
      * @param xmlByteLocation Object containing the byte coordinates
      * @return String representation of the requested bytes
+     * @throws IOException
      */
     public static String read(File file, XMLByteLocation xmlByteLocation) throws IOException
     {
@@ -41,12 +44,14 @@ public class RandomAccessXMLReader
     }
 
     /**
-     * Get a string from the provided file using the offset and length from the XMLByteLocation, encoded with the
+     * Get a {@link java.lang.String String} from the provided {@link java.io.File File} using the offset and length
+     * from the {@link com.thirdpartylabs.xmlscalpel.entity.XMLByteLocation XMLByteLocation}, encoded with the
      * provided charset
      * @param file The file to extract data from
      * @param xmlByteLocation Object containing the byte coordinates
-     * @param charset Charset to be used when creating the String from extracted bytes
+     * @param charset Charset to be used when creating the {@link java.lang.String String} from extracted bytes
      * @return String representation of the requested bytes
+     * @throws IOException
      */
     public static String read(File file, XMLByteLocation xmlByteLocation, String charset) throws IOException
     {
@@ -54,12 +59,14 @@ public class RandomAccessXMLReader
     }
 
     /**
-     * Get a string from the provided file using the offset and length from the XMLByteLocation, encoded with the
+     * Get a {@link java.lang.String String} from the provided {@link java.io.File File} using the offset and length
+     * from the {@link com.thirdpartylabs.xmlscalpel.entity.XMLByteLocation XMLByteLocation}, encoded with the
      * provided charset
      * @param file The file to extract data from
      * @param xmlByteLocation Object containing the byte coordinates
      * @param charset Charset to be used when creating the String from extracted bytes
      * @return String representation of the requested bytes
+     * @throws IOException
      */
     public static String read(File file, XMLByteLocation xmlByteLocation, Charset charset) throws IOException
     {
