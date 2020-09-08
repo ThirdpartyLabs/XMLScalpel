@@ -4,7 +4,7 @@ Extract XML elements from a file by byte offset. Includes a streaming reader tha
 
 ### Status
 [![Build Status](https://travis-ci.org/ThirdpartyLabs/XMLScalpel.svg?branch=main)](https://travis-ci.org/ThirdpartyLabs/XMLScalpel)
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.thirdpartylabs/xmlscalpel-core/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.thirdpartylabs/xmlscalpel-core/)
+[![Maven Central](https://img.shields.io/maven-central/v/com.thirdpartylabs/xmlscalpel-core?color=45bf17)](https://search.maven.org/artifact/com.thirdpartylabs/xmlscalpel-core)
 [![Javadoc](https://javadoc.io/badge/com.thirdpartylabs/xmlscalpel-core.svg)](http://www.javadoc.io/doc/com.thirdpartylabs/xmlscalpel-core)
 
 ## Use Case
