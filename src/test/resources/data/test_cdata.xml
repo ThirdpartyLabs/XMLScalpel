@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<people>
+    <person>
+        <uid>AAFA2FB8-336E-D682-F921-856A2B5E5B81</uid>
+        <name>Darryl</name>
+        <phone>1-529-170-2205</phone>
+        <email>lectus.rutrum@commodo.edu</email>
+        <address>1246 Euismod Rd.</address>
+        <city>Lehrte</city>
+        <postcode>55963</postcode>
+        <country>Egypt</country>
+        <description><![CDATA[<p>Lorem <b>ipsum</b> dolor sit amet</p>]]></description>
+    </person>
+    <person>
+        <uid>DA16AFE3-38AE-28CB-489E-C1711139A8F3</uid>
+        <name>Cherokee</name>
+        <phone>1-495-592-2405</phone>
+        <email>ac@Aenean.com</email>
+        <address>4605 Facilisis Av.</address>
+        <city>Lampernisse</city>
+        <postcode>5837</postcode>
+        <country>Saint Barthélemy</country>
+        <description><![CDATA[<p>Lorem <b>ipsum</b> dolor sit amet</p>]]></description>
+    </person>
+</people>

@@ -37,6 +37,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SmokeTest
 {
@@ -51,7 +52,7 @@ class SmokeTest
     {
         // Get the people.xml test file
         URL fileUrl = getClass().getResource("/data/people.xml");
-        String decodedPath = URLDecoder.decode(fileUrl.getFile(), StandardCharsets.UTF_8);
+        String decodedPath = URLDecoder.decode(fileUrl.getFile(), StandardCharsets.UTF_8.toString());
 
         DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
 
@@ -65,7 +66,7 @@ class SmokeTest
         StreamingXMLReader reader = new StreamingXMLReader();
         reader.readFile(testFile, processor);
 
-        // Make sure we have all of the expected nodes
+        // Make sure we have all of the expected nodes.
         assertEquals(100, nodeEntities.size(), "Expected 100 nodes");
 
         // Set up collections for our Person and XMLByteLocation objects
@@ -136,7 +137,7 @@ class SmokeTest
     {
         // Get the po_namespace.xml file
         URL fileUrl = getClass().getResource("/data/po_namespace.xml");
-        String decodedPath = URLDecoder.decode(fileUrl.getFile(), StandardCharsets.UTF_8);
+        String decodedPath = URLDecoder.decode(fileUrl.getFile(), StandardCharsets.UTF_8.toString());
 
         File testFile = new File(decodedPath);
 
@@ -248,7 +249,7 @@ class SmokeTest
     void testReaderPopulatedCollectionWithNamespaceAndTargetNodes(URL fileUrl) throws Exception
     {
         // Get the po_namespace.xml file
-        String decodedPath = URLDecoder.decode(fileUrl.getFile(), StandardCharsets.UTF_8);
+        String decodedPath = URLDecoder.decode(fileUrl.getFile(), StandardCharsets.UTF_8.toString());
 
         File testFile = new File(decodedPath);
 
@@ -304,7 +305,7 @@ class SmokeTest
         }
 
         // Make sure we have all of the expected nodes
-        assertEquals( 6, addresses.size(), "Expected 6 addresss");
+        assertEquals( 6, addresses.size(), "Expected 6 address");
         assertEquals(5, items.size(), "Expected 5 items");
 
         // Test all addresses
@@ -404,6 +405,45 @@ class SmokeTest
                     "Control and test items should be equal");
 
             numToTest--;
+        }
+    }
+
+    @Test
+    public void testCdataReadProperly() throws Exception
+    {
+        // Get the people.xml test file
+        URL fileUrl = getClass().getResource("/data/test_cdata.xml");
+        String decodedPath = URLDecoder.decode(fileUrl.getFile(), StandardCharsets.UTF_8.toString());
+
+        File testFile = new File(decodedPath);
+
+        // Create a collection to hold the Fragments and instantiate an XMLStreamProcessor with it
+        List<Fragment> nodeEntities = new ArrayList<>();
+        XMLStreamProcessor processor = new CollectionPopulatingXMLStreamProcessor(nodeEntities);
+
+        // Instantiate a StreamingXMLReader and kick it off with our file and processor
+        StreamingXMLReader reader = new StreamingXMLReader();
+        reader.readFile(testFile, processor);
+
+        // Make sure we have all of the expected nodes
+        assertEquals(2, nodeEntities.size(), "Expected 2 nodes");
+
+        List<Person> people = new ArrayList<>();
+
+        for (Fragment fragment : nodeEntities)
+        {
+            // Read in the string as defined by the range in the XMLByteLocation and verify "<![CDATA[" is present
+            String retrievedXml = RandomAccessXMLReader.read(testFile, fragment.getXmlByteLocation());
+            assertTrue(retrievedXml.contains("<![CDATA["), "XML should contain string CDATA");
+
+            Person person = PersonMapper.fromDomNode(fragment.getDocumentFragment());
+            people.add(person);
+        }
+
+        String controlDescription = "<p>Lorem <b>ipsum</b> dolor sit amet</p>";
+        for(Person currPerson:people)
+        {
+            assertEquals(controlDescription, currPerson.getDescription(), "Description read from CDATA should match expected value");
         }
     }
 }

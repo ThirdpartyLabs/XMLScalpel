@@ -16,6 +16,7 @@
 package com.thirdpartylabs.xmlscalpel.io.reader;
 
 import com.ctc.wstx.stax.WstxInputFactory;
+import com.ctc.wstx.stax.WstxOutputFactory;
 import com.thirdpartylabs.xmlscalpel.entity.Fragment;
 import com.thirdpartylabs.xmlscalpel.entity.OuterDocument;
 import com.thirdpartylabs.xmlscalpel.entity.XMLByteLocation;
@@ -30,16 +31,13 @@ import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamConstants;
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamReader;
-import javax.xml.transform.*;
+import javax.xml.stream.*;
+import javax.xml.stream.events.*;
 import javax.xml.transform.dom.DOMResult;
-import javax.xml.transform.stax.StAXSource;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -53,13 +51,12 @@ import java.util.stream.Collectors;
  */
 public class StreamingXMLReader
 {
-    private List<String> targetPaths = new ArrayList<>();
-    private final Stack<String> tagStack = new Stack<>();
-    private String currentPath = "/";
-    private int eventType = 0;
     private ByteTrackingReader byteTrackingReader;
-    private XMLStreamReader reader;
-    private final Transformer transformer;
+    private XMLEventReader reader;
+    private final XMLInputFactory xif;
+    private final XMLOutputFactory xof;
+    private final DocumentBuilder builder;
+
     private final Map<String, String> documentElementAttributes = new HashMap<>();
     private final Map<String, String> documentElementAttributeNamespaces = new HashMap<>();
     private String documentElementTagName = null;
@@ -68,10 +65,54 @@ public class StreamingXMLReader
     private String xmlVersion = null;
     private String characterEncodingScheme = null;
 
-    public StreamingXMLReader() throws TransformerConfigurationException
+    private final Stack<String> tagStack = new Stack<>();
+    private List<String> targetPaths = new ArrayList<>();
+    private String currentPath = "/";
+
+    public StreamingXMLReader() throws ParserConfigurationException
     {
-        TransformerFactory tf = TransformerFactory.newInstance("com.sun.org.apache.xalan.internal.xsltc.trax.TransformerFactoryImpl", null);
-        transformer = tf.newTransformer();
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+        dbf.setNamespaceAware(true);
+        builder = dbf.newDocumentBuilder();
+
+        xif = WstxInputFactory.newInstance();
+        xof = WstxOutputFactory.newInstance();
+    }
+
+    /**
+     * Read an XML file using the {@link com.ctc.wstx.stax.WstxInputFactory Woodstox} streaming API and supply the
+     * {@link com.thirdpartylabs.xmlscalpel.processor.XMLStreamProcessor XMLStreamProcessor} with
+     * {@link com.thirdpartylabs.xmlscalpel.entity.Fragment Fragment} objects.
+     * <p>
+     * All (and only) top level elements are returned. For example, given an XML file with a structure like
+     * <pre>
+     * {@code
+     * <feed>
+     *  <product></product>
+     *  <product></product>
+     *  <product></product>
+     * </feed>
+     * }
+     * </pre>
+     * <p>
+     * All {@code product} nodes will be returned.
+     * <p>
+     * {@link com.thirdpartylabs.xmlscalpel.entity.Fragment Fragment} objects wrap the dom node as a
+     * {@link org.w3c.dom.DocumentFragment DocumentFragment} and an
+     * {@link com.thirdpartylabs.xmlscalpel.entity.XMLByteLocation XMLByteLocation} object that describes the
+     * node's location in the XML file. This allows efficient retrieval of the nodes later using the
+     * {@link com.thirdpartylabs.xmlscalpel.io.reader.RandomAccessXMLReader RandomAccessXMLReader}
+     * <p>
+     *
+     * @param file      The XML file to process
+     * @param processor {@link com.thirdpartylabs.xmlscalpel.processor.XMLStreamProcessor XMLStreamProcessor} instance
+     *
+     * @throws FileNotFoundException
+     * @throws XMLStreamException
+     */
+    public void readFile(File file, XMLStreamProcessor processor) throws IOException, XMLStreamException
+    {
+        readFile(file, processor, null);
     }
 
     /**
@@ -129,10 +170,10 @@ public class StreamingXMLReader
      *
      * @throws FileNotFoundException
      * @throws XMLStreamException
-     * @throws TransformerException
      */
-    public void readFile(File file, XMLStreamProcessor processor, List<String> targetPaths) throws FileNotFoundException, XMLStreamException, TransformerException
+    public void readFile(File file, XMLStreamProcessor processor, List<String> targetPaths) throws IOException, XMLStreamException
     {
+        // Set up the target paths and clear the tag stack
         setTargetPaths(targetPaths);
         tagStack.clear();
 
@@ -141,148 +182,66 @@ public class StreamingXMLReader
 
         int nodeCount = 0;
 
+        // Set set up the reader and populate metadata
         initializeDocument(file);
 
-        /*
-            We have to be careful with how we traverse the document here, we can't simply call
-            reader.nextTag() in the while statement. That will only work if there is whitespace between the
-            target elements. We need to check the current event type after the transform, it will have rolled forward
-            to START_ELEMENT if there was no whitespace.
-         */
-        eventType = reader.nextTag();
-        while (eventType == XMLStreamConstants.START_ELEMENT)
+        // Loop through events until we have traversed the entire document
+        XMLEvent event;
+        do
         {
-            // Keep track of our location
-            pushTag(reader.getName());
-
-            // Should we extract this element?
-            if (elementIsEligibleForProcessing())
+            event = reader.nextEvent();
+            if (event.isStartElement())
             {
-                /*
-                    Get the char offset from the Woodstox reader and use it to get a byte offset
-                    from our underlying ByteTrackingReader
+                // Keep track of our location
+                pushTag(event.asStartElement().getName());
 
-                    This will be the exact offset for the beginning of the opening tag of this node
-                 */
-                int startCharOffset = reader.getLocation().getCharacterOffset();
-                long startByteOffset = byteTrackingReader.getByteOffsetForCharOffset(startCharOffset);
+                // Should we extract this element?
+                if (elementIsEligibleForProcessing())
+                {
+                    StartElement element = event.asStartElement();
 
-                // Use the transformer to extract the current top level node
-                DOMResult result = new DOMResult();
-                transformer.transform(new StAXSource(reader), result);
-                transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-                transformer.setOutputProperty(OutputKeys.ENCODING, characterEncodingScheme);
-                Document resultDocument = (Document) result.getNode();
+                    // Get our offset for the beginning of this node
+                    int startCharOffset = element.getLocation().getCharacterOffset();
+                    long startByteOffset = byteTrackingReader.getByteOffsetForCharOffset(startCharOffset);
 
-                // Create a DocumentFragment from the document node of the resulting document
-                DocumentFragment outputFragment = resultDocument.createDocumentFragment();
-                outputFragment.appendChild(resultDocument.getDocumentElement());
+                    // Populate a DocumentFragment for this node
+                    DocumentFragment outputFragment = startEventToFragment(reader, event);
 
-                /*
+                    /*
                     Get the char offset from the Woodstox reader and use it to get a byte offset
                     from our underlying ByteTrackingReader
 
                     This will be the exact offset for the end of the closing tag of this node
-                 */
-                int endCharOffset = reader.getLocation().getCharacterOffset();
-                long endByteOffset = byteTrackingReader.getByteOffsetForCharOffset(endCharOffset);
+                    */
+                    XMLEvent endEvent = reader.peek();
+                    int endCharOffset = endEvent.getLocation().getCharacterOffset();
+                    long endByteOffset = byteTrackingReader.getByteOffsetForCharOffset(endCharOffset);
 
-                // Calculate the number of bytes in our element
-                int byteLength = (int) (endByteOffset - startByteOffset);
+                    // Calculate the number of bytes in our element
+                    int byteLength = (int) (endByteOffset - startByteOffset);
 
-                // Instantiate an XMLByteLocation with the current index and byte  offsets
-                XMLByteLocation xmlByteLocation = new XMLByteLocation(nodeCount, startByteOffset, byteLength);
+                    // Instantiate an XMLByteLocation with the current index and byte  offsets
+                    XMLByteLocation xmlByteLocation = new XMLByteLocation(nodeCount, startByteOffset, byteLength);
 
-                // Wrap the DocumentFragment and XMLByteLocation in a Fragment object
-                Fragment fragment = new Fragment(outputFragment, xmlByteLocation);
+                    // Wrap the DocumentFragment and XMLByteLocation in a Fragment object
+                    Fragment fragment = new Fragment(outputFragment, xmlByteLocation);
 
-                // Send the Fragment object to the XMLStreamProcessor
-                processor.process(fragment);
+                    // Send the Fragment object to the XMLStreamProcessor
+                    processor.process(fragment);
 
-                // Bump the index
-                nodeCount++;
+                    // Bump the index
+                    nodeCount++;
 
-                // Get the current event type, only move forward if necessary
-                eventType = reader.getEventType();
-
-                // Pop our current tag off the stack
-                popTag();
-
-                // If we are not rolling into a sibling, we need to do some housekeeping
-                if (eventType != XMLStreamConstants.START_ELEMENT)
-                {
-                    advanceToNextStartElement();
+                    // Pop our tag off the stack
+                    popTag();
                 }
             }
-            else
+            if(event.isEndElement())
             {
-                advanceToNextStartElement();
-            }
-        }
-    }
-
-    /**
-     * Skip to the next readable element, keeping state as needed
-     * @throws XMLStreamException
-     */
-    private void advanceToNextStartElement() throws XMLStreamException
-    {
-        // If we're at the end of the current set of target nodes, pop the outer element off of the stack
-        if (eventType == XMLStreamConstants.END_ELEMENT)
-        {
-            popTag();
-        }
-
-        do
-        {
-            // Read events until we find something useful
-            eventType = reader.next();
-
-            // If we are closing an element, pop it off of the stack
-            if (eventType == XMLStreamConstants.END_ELEMENT)
-            {
+                // Pop this tag off the stack
                 popTag();
             }
-            // Keep rolling until we either hit another start element or the end of the document
-        } while (eventType != XMLStreamConstants.START_ELEMENT
-                 && eventType != XMLStreamConstants.END_DOCUMENT);
-    }
-
-    /**
-     * Read an XML file using the {@link com.ctc.wstx.stax.WstxInputFactory Woodstox} streaming API and supply the
-     * {@link com.thirdpartylabs.xmlscalpel.processor.XMLStreamProcessor XMLStreamProcessor} with
-     * {@link com.thirdpartylabs.xmlscalpel.entity.Fragment Fragment} objects.
-     * <p>
-     * All (and only) top level elements are returned. For example, given an XML file with a structure like
-     * <pre>
-     * {@code
-     * <feed>
-     *  <product></product>
-     *  <product></product>
-     *  <product></product>
-     * </feed>
-     * }
-     * </pre>
-     * <p>
-     * All {@code product} nodes will be returned.
-     * <p>
-     * {@link com.thirdpartylabs.xmlscalpel.entity.Fragment Fragment} objects wrap the dom node as a
-     * {@link org.w3c.dom.DocumentFragment DocumentFragment} and an
-     * {@link com.thirdpartylabs.xmlscalpel.entity.XMLByteLocation XMLByteLocation} object that describes the
-     * node's location in the XML file. This allows efficient retrieval of the nodes later using the
-     * {@link com.thirdpartylabs.xmlscalpel.io.reader.RandomAccessXMLReader RandomAccessXMLReader}
-     * <p>
-     *
-     * @param file      The XML file to process
-     * @param processor {@link com.thirdpartylabs.xmlscalpel.processor.XMLStreamProcessor XMLStreamProcessor} instance
-     *
-     * @throws FileNotFoundException
-     * @throws XMLStreamException
-     * @throws TransformerException
-     */
-    public void readFile(File file, XMLStreamProcessor processor) throws FileNotFoundException, XMLStreamException, TransformerException
-    {
-        readFile(file, processor, null);
+        } while (!event.isEndDocument());
     }
 
     /**
@@ -405,29 +364,36 @@ public class StreamingXMLReader
 
             We don't need to explicitly invoke WstxInputFactory here, XMLInputFactory will give
             us the same result as long as we have woodstox on the classpath, but we're making the compiler
-            enforce it because the default StAX implementation won't work for our purposes.
+            enforce it because most StAX implementations won't work for our purposes.
 
-            The char offsets returned by most XMLStreamReader implementations are inaccurate wns will not allow us to
+            The char offsets returned by most XMLStreamReaders are inaccurate and will not allow us to
             pull out specific elements by byte offset later.
+
+            We need to create the intermediate XMLStreamReader manually and pass it in, we need a reference to it
+            in order to get the XML version, encoding, and character encoding scheme.
          */
-        XMLInputFactory xif = WstxInputFactory.newInstance();
-        reader = xif.createXMLStreamReader(byteTrackingReader);
+        XMLStreamReader xmlStreamReader = xif.createXMLStreamReader(byteTrackingReader);
+        reader = xif.createXMLEventReader(xmlStreamReader);
 
-        // Advance to the document element
-        reader.nextTag();
+        // The StartDocument event
+        reader.nextEvent();
 
-        // Keep track of our location
-        pushTag(reader.getName());
+        //Advance to the document element
+        XMLEvent event = reader.nextEvent();
+        StartElement element = event.asStartElement();
+
+        // Push the document element onto the stack
+        pushTag(element.getName());
 
         // Extract XML metadata
-        encoding = reader.getEncoding();
-        xmlVersion = reader.getVersion();
+        encoding = xmlStreamReader.getEncoding();
+        xmlVersion = xmlStreamReader.getVersion();
         if (xmlVersion == null)
         {
             xmlVersion = "1.0";
         }
 
-        characterEncodingScheme = reader.getCharacterEncodingScheme();
+        characterEncodingScheme = xmlStreamReader.getCharacterEncodingScheme();
         if (characterEncodingScheme == null)
         {
             characterEncodingScheme = StandardCharsets.UTF_8.toString();
@@ -436,20 +402,28 @@ public class StreamingXMLReader
         /*
             Extract namespace attributes, and standard attributes from the document node
          */
-        documentElementTagName = reader.getLocalName();
-        documentElementPrefix = reader.getPrefix();
+        documentElementTagName = element.getName().getLocalPart();
+        documentElementPrefix = element.getName().getPrefix();
 
         documentElementAttributeNamespaces.clear();
-        for (int i = 0; i < reader.getNamespaceCount(); i++)
+
+        Iterator<Namespace> namespaceIterator = element.getNamespaces();
+        while (namespaceIterator.hasNext())
         {
-            documentElementAttributeNamespaces.put(reader.getNamespacePrefix(i), reader.getNamespaceURI(i));
+            Namespace currNamespace = namespaceIterator.next();
+            documentElementAttributeNamespaces.put(currNamespace.getPrefix(), currNamespace.getNamespaceURI());
         }
 
         documentElementAttributes.clear();
-        for (int i = 0; i < reader.getAttributeCount(); i++)
+
+        Iterator<Attribute> attributeIterator = element.getAttributes();
+        while (attributeIterator.hasNext())
         {
-            String currAttributeName = reader.getAttributeName(i).getLocalPart();
-            String currAttributeValue = reader.getAttributeValue(i);
+            Attribute currAttribute = attributeIterator.next();
+            QName aName = currAttribute.getName();
+
+            String currAttributeName = aName.getLocalPart();
+            String currAttributeValue = currAttribute.getValue();
 
             documentElementAttributes.put(currAttributeName, currAttributeValue);
         }
@@ -460,10 +434,9 @@ public class StreamingXMLReader
      * @return {@link org.w3c.dom.Document Document} containing only the document element from the file provided
      * @throws FileNotFoundException
      * @throws XMLStreamException
-     * @throws ParserConfigurationException
      * @throws XMLParseException
      */
-    public Document getEmptyDocument(File file) throws FileNotFoundException, XMLStreamException, ParserConfigurationException, XMLParseException
+    public Document getEmptyDocument(File file) throws FileNotFoundException, XMLStreamException, XMLParseException
     {
         initializeDocument(file);
 
@@ -473,20 +446,15 @@ public class StreamingXMLReader
     /**
      * @return {@link org.w3c.dom.Document Document} containing only the document element from the last file provided to this instance of
      * StreamingXMLReader
-     * @throws ParserConfigurationException
      * @throws XMLParseException
      */
-    public Document getEmptyDocument() throws ParserConfigurationException, XMLParseException
+    public Document getEmptyDocument() throws XMLParseException
     {
         if (documentElementTagName == null)
         {
             return null;
         }
 
-        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-        dbf.setNamespaceAware(true);
-
-        DocumentBuilder builder = dbf.newDocumentBuilder();
         Document output = builder.newDocument();
         output.setXmlVersion(xmlVersion);
         output.setXmlStandalone(true);
@@ -570,9 +538,12 @@ public class StreamingXMLReader
         }
 
         // Normalize the paths and set them as the targetPath list
-        targetPaths = targetPathInput.stream()
-                .map(this::normalizeTargetPath)
-                .collect(Collectors.toList());
+        targetPaths.clear();
+        for(String currPath:targetPathInput)
+        {
+            String currNormalizedPath = normalizeTargetPath(currPath);
+            targetPaths.add(currNormalizedPath);
+        }
     }
 
     private void pushTag(QName qName)
@@ -587,6 +558,61 @@ public class StreamingXMLReader
         currentPath = getCurrentTagPath();
     }
 
+    /**
+     * Take over the XMLEvent stream and pipe the events for the current Element into a {@link DocumentFragment}
+     * @param reader {@link XMLEventReader}
+     * @param startEvent {@link XMLEvent}
+     * @return {@link DocumentFragment} representing the node defined by the start event
+     * @throws XMLStreamException
+     */
+    private DocumentFragment startEventToFragment(XMLEventReader reader, XMLEvent startEvent) throws XMLStreamException
+    {
+        StartElement element = startEvent.asStartElement();
+        QName name = element.getName();
+        int stack = 1;
+
+        // Create a DOMResult and pass it to an XMLEventWriter that we can pipe the events into
+        DOMResult domResult = new DOMResult(builder.newDocument());
+        XMLEventWriter writer = xof.createXMLEventWriter(domResult);
+
+        // Spin through events until we reach the end of our Element
+        writer.add(element);
+        while (true)
+        {
+            XMLEvent event = reader.nextEvent();
+            if (event.isStartElement() && event.asStartElement().getName().equals(name))
+            {
+                stack++;
+            }
+            if (event.isEndElement())
+            {
+                EndElement end = event.asEndElement();
+                if (end.getName().equals(name))
+                {
+                    stack--;
+                    if (stack == 0)
+                    {
+                        writer.add(event);
+                        break;
+                    }
+                }
+            }
+            writer.add(event);
+        }
+        writer.close();
+
+        // Create a DocumentFragment and return it
+        Document document = (Document) domResult.getNode();
+        DocumentFragment fragment = document.createDocumentFragment();
+        fragment.appendChild(document.getDocumentElement());
+
+        return fragment;
+    }
+
+    /**
+     * Use the current path to determine whether or not to process the current element
+     * @return boolean
+     */
     private boolean elementIsEligibleForProcessing()
     {
         // If there are no path specs, always handle the opening element events
@@ -619,7 +645,7 @@ public class StreamingXMLReader
         String prefix = qName.getPrefix();
         String tagName = qName.getLocalPart();
 
-        if (prefix != null && !prefix.isBlank())
+        if (prefix != null && !prefix.isEmpty())
         {
             tagName = prefix + ":" + tagName;
         }

@@ -83,7 +83,7 @@ Use Maven (or Ivy) to to add as a dependency from Maven Central repository:
 
 * Group id: `com.thirdpartylabs`
 * Artifact id: `xmlscalpel-core`
-* Latest published version: 0.0.1 (2020-09-08)
+* Latest published version: 0.0.2 (2020-09-11)
 
 ## Requirements
 
