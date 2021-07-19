@@ -79,15 +79,15 @@ DocumentFragment fragment = outerDocument.getDocumentFragmentForXmlString(retrie
 ```
 ## Maven
 
-Use Maven (or Ivy) to to add as a dependency from Maven Central repository:
+Use Maven (or Ivy) to add as a dependency from Maven Central repository:
 
 * Group id: `com.thirdpartylabs`
 * Artifact id: `xmlscalpel-core`
-* Latest published version: 0.0.2 (2020-09-11)
+* Latest published version: 0.0.3 (2021-07-14)
 
 ## Requirements
 
-Requires Woodstox version 6, which requires Java 6 (JDK 1.6); as well as Stax API that is included in JDK.
+Requires Java 9 (JDK 1.9), Woodstox version 6, as well as Stax API that is included in JDK.
 
 ## License
 

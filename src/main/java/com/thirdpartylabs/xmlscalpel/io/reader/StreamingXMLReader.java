@@ -25,7 +25,6 @@ import org.w3c.dom.Document;
 import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 
-import javax.management.modelmbean.XMLParseException;
 import javax.xml.XMLConstants;
 import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
@@ -40,7 +39,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Streaming XML file reader that uses the {@link com.ctc.wstx.stax.WstxInputFactory Woodstox} stream reader to extract
@@ -66,7 +64,7 @@ public class StreamingXMLReader
     private String characterEncodingScheme = null;
 
     private final Stack<String> tagStack = new Stack<>();
-    private List<String> targetPaths = new ArrayList<>();
+    private final List<String> targetPaths = new ArrayList<>();
     private String currentPath = "/";
 
     public StreamingXMLReader() throws ParserConfigurationException
@@ -463,7 +461,6 @@ public class StreamingXMLReader
         if (documentElementPrefix.isEmpty())
         {
             documentElement = output.createElement(documentElementTagName);
-            output.appendChild(documentElement);
         }
         else
         {
@@ -475,8 +472,9 @@ public class StreamingXMLReader
             }
 
             documentElement = output.createElementNS(nsURI, documentElementPrefix + ":" + documentElementTagName);
-            output.appendChild(documentElement);
         }
+
+        output.appendChild(documentElement);
 
         for (Map.Entry<String, String> currNamespace : documentElementAttributeNamespaces.entrySet())
         {

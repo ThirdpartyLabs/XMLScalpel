@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.thirdpartylabs</groupId>
     <artifactId>xmlscalpel-core</artifactId>
-    <version>0.0.2</version>
+    <version>0.0.3</version>
     <packaging>jar</packaging>
     <name>${project.groupId}:${project.artifactId}</name>
     <description>XMLScalpel is a Java library that enables the efficient extraction of document fragments from XML files
@@ -24,14 +24,14 @@
         <name>Thirdparty Labs</name>
         <url>https://thirdpartylabs.com</url>
     </organization>
-    <url>https://github.com/rruchte/XMLScalpel</url>
+    <url>https://github.com/thirdpartylabs/XMLScalpel</url>
     <issueManagement>
-        <url>https://github.com/rruchte/XMLScalpel/issues</url>
+        <url>https://github.com/thirdpartylabs/XMLScalpel/issues</url>
     </issueManagement>
     <scm>
-        <connection>scm:git:git@github.com:rruchte/XMLScalpel.git</connection>
-        <developerConnection>scm:git:git@github.com:rruchte/XMLScalpel.git</developerConnection>
-        <url>https://github.com/rruchte/XMLScalpel</url>
+        <connection>scm:git:git@github.com:thirdpartylabs/XMLScalpel.git</connection>
+        <developerConnection>scm:git:git@github.com:thirdpartylabs/XMLScalpel.git</developerConnection>
+        <url>https://github.com/thirdpartylabs/XMLScalpel</url>
         <tag>HEAD</tag>
     </scm>
     <licenses>
@@ -43,15 +43,14 @@
     </licenses>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <woodstox-version>6.0.3</woodstox-version>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
-        <maven-surefire-version>2.22.2</maven-surefire-version>
+        <woodstox-version>6.2.6</woodstox-version>
+        <maven.compiler.source>1.9</maven.compiler.source>
+        <maven.compiler.target>1.9</maven.compiler.target>
+        <maven-gpg-plugin-version>1.6</maven-gpg-plugin-version>
+        <maven-javadoc-plugin-version>3.3.0</maven-javadoc-plugin-version>
         <maven-plugin-version>3.8.1</maven-plugin-version>
         <maven-source-plugin-version>3.2.1</maven-source-plugin-version>
-        <maven-javadoc-plugin-version>3.2.0</maven-javadoc-plugin-version>
-        <maven-gpg-plugin-version>1.6</maven-gpg-plugin-version>
+        <maven-surefire-version>2.22.2</maven-surefire-version>
         <junit-version>RELEASE</junit-version>
     </properties>
     <dependencies>
@@ -65,13 +64,6 @@
             <artifactId>junit-jupiter</artifactId>
             <version>${junit-version}</version>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-source-plugin</artifactId>
-            <version>${maven-source-plugin-version}</version>
-            <type>maven-plugin</type>
-            <scope>compile</scope>
         </dependency>
     </dependencies>
     <build>
@@ -98,20 +90,6 @@
             <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
         </repository>
     </distributionManagement>
-    <reporting>
-        <plugins>
-            <plugin>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <configuration>
-                    <show>private</show>
-                    <serialwarn>true</serialwarn>
-                    <author>true</author>
-                    <doctitle>${project.name} ${project.version} API</doctitle>
-                    <windowtitle>${project.name} ${project.version} API</windowtitle>
-                </configuration>
-            </plugin>
-        </plugins>
-    </reporting>
     <profiles>
         <profile>
             <id>release</id>
@@ -134,6 +112,10 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-javadoc-plugin</artifactId>
                         <version>${maven-javadoc-plugin-version}</version>
+                        <configuration>
+                            <source>8</source>
+                            <detectJavaApiLink>false</detectJavaApiLink>
+                        </configuration>
                         <executions>
                             <execution>
                                 <id>attach-javadocs</id>

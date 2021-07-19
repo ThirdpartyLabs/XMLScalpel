@@ -22,6 +22,7 @@ import com.thirdpartylabs.xmlscalpel.mapper.PersonMapper;
 import com.thirdpartylabs.xmlscalpel.mapper.PurchaseOrderAddressMapper;
 import com.thirdpartylabs.xmlscalpel.mapper.PurchaseOrderItemMapper;
 import com.thirdpartylabs.xmlscalpel.mapper.PurchaseOrderMapper;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.w3c.dom.Document;
 import org.w3c.dom.DocumentFragment;
@@ -246,7 +247,7 @@ class SmokeTest
     /**
      * Process purchase order data, extracting different sub-node types
      */
-    void testReaderPopulatedCollectionWithNamespaceAndTargetNodes(URL fileUrl) throws Exception
+    void testReaderPopulatedCollectionWithNamespaceAndTargetNodes(@NotNull URL fileUrl) throws Exception
     {
         // Get the po_namespace.xml file
         String decodedPath = URLDecoder.decode(fileUrl.getFile(), StandardCharsets.UTF_8.toString());
