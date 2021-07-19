@@ -3,7 +3,7 @@
 Extract XML elements from a file by byte offset. Includes a streaming reader that uses [Woodstox](https://github.com/FasterXML/woodstox) Stax implementation to extract elements from large files and report their byte offsets and lengths for later random-access retrieval, along with a random-access reader to efficiently extract elements from any point in very large files.
 
 ### Status
-[![Build Status](https://travis-ci.org/ThirdpartyLabs/XMLScalpel.svg?branch=main)](https://travis-ci.org/ThirdpartyLabs/XMLScalpel)
+[![Build Status](https://github.com/ThirdpartyLabs/XMLScalpel/actions/workflows/maven.yml/badge.svg)](https://github.com/ThirdpartyLabs/XMLScalpel/blob/main/.github/workflows/maven.yml)
 [![Maven Central](https://img.shields.io/maven-central/v/com.thirdpartylabs/xmlscalpel-core?color=45bf17)](https://search.maven.org/artifact/com.thirdpartylabs/xmlscalpel-core)
 [![Javadoc](https://javadoc.io/badge/com.thirdpartylabs/xmlscalpel-core.svg)](http://www.javadoc.io/doc/com.thirdpartylabs/xmlscalpel-core)
 
