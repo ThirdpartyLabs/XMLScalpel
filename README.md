@@ -38,7 +38,7 @@ file
 * A facility for rehydrating XML strings that contain namespace prefixes into document fragments with correct 
 namespace bindings.
 
-```
+```java
 File bigFile = new File("bigfeed.xml");
 
 // Create a collection to hold the Fragments and instantiate an XMLStreamProcessor with it
