@@ -83,11 +83,11 @@ Use Maven (or Ivy) to add as a dependency from Maven Central repository:
 
 * Group id: `com.thirdpartylabs`
 * Artifact id: `xmlscalpel-core`
-* Latest published version: 0.0.3 (2021-07-14)
+* Latest published version: 0.0.4 (2022-11-03)
 
 ## Requirements
 
-Requires Java 9 (JDK 1.9), Woodstox version 6, as well as Stax API that is included in JDK.
+Requires Java 9 (JDK 1.9), Woodstox version 6.4.0, as well as Stax API that is included in JDK.
 
 ## License
 

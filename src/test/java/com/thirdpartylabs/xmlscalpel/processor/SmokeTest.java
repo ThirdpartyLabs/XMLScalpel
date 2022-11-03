@@ -22,12 +22,12 @@ import com.thirdpartylabs.xmlscalpel.mapper.PersonMapper;
 import com.thirdpartylabs.xmlscalpel.mapper.PurchaseOrderAddressMapper;
 import com.thirdpartylabs.xmlscalpel.mapper.PurchaseOrderItemMapper;
 import com.thirdpartylabs.xmlscalpel.mapper.PurchaseOrderMapper;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.w3c.dom.Document;
 import org.w3c.dom.DocumentFragment;
 import org.xml.sax.InputSource;
 
+import javax.validation.constraints.NotNull;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
